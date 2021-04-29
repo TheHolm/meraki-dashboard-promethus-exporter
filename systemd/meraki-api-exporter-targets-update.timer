@@ -1,0 +1,10 @@
+[Unit]
+Description=Updating Prometheus targets from Meraki API
+
+[Timer]
+OnCalendar=daily
+AccuracySec= 600s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
