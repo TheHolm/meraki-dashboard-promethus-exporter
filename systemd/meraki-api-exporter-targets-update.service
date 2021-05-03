@@ -3,9 +3,8 @@ Description=Updates Prometheus targets for Meraki API portal
 
 [Service]
 Type=oneshot
-WorkingDirectory=/root
+WorkingDirectory=/etc/prometheus
 ExecStart=/usr/bin/curl --silent --output /etc/prometheus/meraki-targets.yml http:/127.0.0.1:9822/organizations 
 
 [Install]
 WantedBy=multi-user.target
-

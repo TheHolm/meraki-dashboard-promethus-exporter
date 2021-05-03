@@ -5,8 +5,8 @@ Description=Prometheus exporter from Meraki API portal
 Type=simple
 RestartSec=15sec
 Restart=on-failure
-WorkingDirectory=/root
-ExecStart=/usr/bin/python3 /root/meraki-api-exporter.py -k <API KEY>
+WorkingDirectory=/etc/prometheus
+ExecStart=/usr/bin/python3 <where wild things are>/meraki-api-exporter.py -k <API KEY>
 
 [Install]
 WantedBy=multi-user.target
