@@ -171,22 +171,22 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             # values={ 'latencyMs': lambda a : str(a)}
             try:
                 if host_stats[host]['latencyMs'] is not None:
-                    responce = responce + 'latencyMs' + target + '} ' + str(host_stats[host]['latencyMs']) + '\n'
+                    responce = responce + 'meraki_device_latency' + target + '} ' + str(host_stats[host]['latencyMs']/1000) + '\n'
                 if host_stats[host]['lossPercent'] is not None:
-                    responce = responce + 'lossPercent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
+                    responce = responce + 'meraki_device_loss_percent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
             except KeyError:
                 pass
             try:
-                responce = responce + 'status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
+                responce = responce + 'meraki_device_status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
             except KeyError:
                 pass
             try:
-                responce = responce + 'usingCellularFailover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
+                responce = responce + 'meraki_device_using_cellular_failover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
             except KeyError:
                 pass
             if 'uplinks' in host_stats[host]:
                 for uplink in host_stats[host]['uplinks'].keys():
-                    responce = responce + 'uplinkStatus' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
+                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
 
         responce = responce + '# TYPE request_processing_seconds summary\n'
         responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
@@ -205,11 +205,11 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Cisco LNS.')
+    parser = argparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
     parser.add_argument('-k', metavar='API_KEY', type=str, required=True,
                         help='API Key')
     parser.add_argument('-p', metavar='http_port', type=int, default=9822,
-                        help='HTTP port to listen for Promethius scrapper, default 8000')
+                        help='HTTP port to listen for Prometheus scrapper, default 9822')
     parser.add_argument('-i', metavar='bind_to_ip', type=str, default="",
                         help='IP address where HTTP server will listen, default all interfaces')
     args = vars(parser.parse_args())
