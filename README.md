@@ -29,8 +29,8 @@ All metrics but __request_processing_seconds__ has following Labels
 ```
 pip install meraki
 ```
-You need to provide API Key from meraki portal as argument when starting exporter.
-**DO NOT USE KEYS WITH FULL ADMIN PRIVILEGES**
+You need to provide API Key from meraki portal as argument when starting exporter.<br>
+**DO NOT USE KEYS WITH FULL ADMIN PRIVILEGES**<br>
 Exporter is listening on port 9822 on all interfaces by default
 
 ```
@@ -39,9 +39,9 @@ Exporter is listening on port 9822 on all interfaces by default
   -p http_port   HTTP port to listen for Prometheus scrapper, default 9822
   -i bind_to_ip  IP address where HTTP server will listen, default all interfaces
 ```
-For GET request about **/?target=\<Organization Id\>** path will return data expected for Promethus Exporter
+GET request for **/?target=\<Organization Id\>** returns data expected for Promethus Exporter
 
-For GET requestabout  **/organizations** path will return YAML formatted list of Organisation Id API key has access to. You can use to automatically populate list of targets for Prometheus.  
+GET request for **/organizations** returns YAML formatted list of Organisation Id API key has access to. You can use to automatically populate list of targets in Prometheus configuration.  
 ```
 /usr/bin/curl --silent --output /etc/prometheus/meraki-targets.yml http:/127.0.0.1:9822/organizations
 ```
@@ -57,4 +57,4 @@ scrape_configs:
       - files:
         - /etc/prometheus/meraki-targets.yml
 ```
-Please check **/systemd** folder for systemd services and timers configuration files if your system uses that abomination.
+Please check **/systemd** folder for systemd services and timers configuration files, if your system uses it.
