@@ -1,5 +1,5 @@
-# Meraki API Exporter for Promethus
-Promethus exporter to collect some data from Meraki dashboard via API
+# Meraki API Exporter for Prometheus
+Prometheus exporter to collect some data from Meraki dashboard via API
 
 ### Exported metrics
 Not all devices exports all metrics.
@@ -39,7 +39,7 @@ Exporter is listening on port 9822 on all interfaces by default
   -p http_port   HTTP port to listen for Prometheus scrapper, default 9822
   -i bind_to_ip  IP address where HTTP server will listen, default all interfaces
 ```
-GET request for **/?target=\<Organization Id\>** returns data expected for Promethus Exporter
+GET request for **/?target=\<Organization Id\>** returns data expected for Prometheus Exporter
 
 GET request for **/organizations** returns YAML formatted list of Organisation Id API key has access to. You can use to automatically populate list of targets in Prometheus configuration.  
 ```
