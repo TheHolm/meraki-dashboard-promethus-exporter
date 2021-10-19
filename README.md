@@ -27,7 +27,7 @@ All metrics but __request_processing_seconds__ has following Labels
 
 ### How to Use
 ```
-pip install meraki
+pip install -r requirements.txt
 ```
 You need to provide API Key from meraki portal as argument when starting exporter.<br>
 **DO NOT USE KEYS WITH FULL ADMIN PRIVILEGES**<br>

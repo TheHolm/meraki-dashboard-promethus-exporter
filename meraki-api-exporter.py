@@ -1,8 +1,8 @@
 import http.server
 import threading
-import argparse
 import time
 
+import configargparse
 import meraki
 
 
@@ -205,11 +205,11 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
+    parser = configargparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
     parser.add_argument('-k', metavar='API_KEY', type=str, required=True,
-                        help='API Key')
+                        env_var='MERAKI_API_KEY', help='API Key')
     parser.add_argument('-p', metavar='http_port', type=int, default=9822,
-                        help='HTTP port to listen for Prometheus scrapper, default 9822')
+                        help='HTTP port to listen for Prometheus scraper, default 9822')
     parser.add_argument('-i', metavar='bind_to_ip', type=str, default="",
                         help='IP address where HTTP server will listen, default all interfaces')
     args = vars(parser.parse_args())
