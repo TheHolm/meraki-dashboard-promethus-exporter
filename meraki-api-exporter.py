@@ -159,8 +159,8 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
         for host in host_stats.keys():
             try:
-                target = '{ serial="' + host + \
-                         '", name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
+                target = '{serial="' + host + \
+                         '",name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
                          '",networkId="' + host_stats[host]['networkId'] + \
                          '",orgName="' + host_stats[host]['orgName'] + \
                          '",orgId="' + organizationId + \
