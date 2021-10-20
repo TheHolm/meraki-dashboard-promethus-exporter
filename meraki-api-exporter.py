@@ -130,7 +130,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         organizationId = str(dest_orgId)
 
         start_time = time.monotonic()
-        self.wfile.write("\n".encode('utf-8'))
 
         host_stats = get_usage(dashboard, organizationId)
         print("Reporting on:", len(host_stats), "hosts")
@@ -152,11 +151,11 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                            'not connected': 3,
                            'failed': 4}
 
-        responce = "# TYPE latencyMs gauge\n" + \
-                   "# TYPE lossPercent gauge\n" + \
-                   "# TYPE status gauge\n" + \
-                   "# TYPE uplinkStatus gauge\n" + \
-                   "# TYPE usingCellularFailover gauge\n"
+        responce = "# TYPE meraki_device_latency gauge\n" + \
+                   "# TYPE meraki_device_loss_percent gauge\n" + \
+                   "# TYPE meraki_device_status gauge\n" + \
+                   "# TYPE meraki_device_uplink_status gauge\n" + \
+                   "# TYPE meraki_device_using_cellular_failover gauge\n"
 
         for host in host_stats.keys():
             try:
@@ -192,7 +191,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
 
         self.wfile.write(responce.encode('utf-8'))
-        self.wfile.write("\n".encode('utf-8'))
 
     def do_HEAD(self):
         self._set_headers()
