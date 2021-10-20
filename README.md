@@ -17,7 +17,7 @@ Not all devices exports all metrics.
 All metrics but __request_processing_seconds__ has following Labels
 | . | . | . |
 | --- | --- | --- |
-| serial | string | Setial Number
+| serial | string | Serial Number
 | name | string | Device name or MAC address if name is not defined
 | networkId | string | Network ID to which device belongs too  
 | orgName  | string | Organisation Name
