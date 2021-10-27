@@ -1,8 +1,8 @@
 import http.server
 import threading
-import argparse
 import time
 
+import configargparse
 import meraki
 
 
@@ -130,7 +130,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         organizationId = str(dest_orgId)
 
         start_time = time.monotonic()
-        self.wfile.write("\n".encode('utf-8'))
 
         host_stats = get_usage(dashboard, organizationId)
         print("Reporting on:", len(host_stats), "hosts")
@@ -152,16 +151,16 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                            'not connected': 3,
                            'failed': 4}
 
-        responce = "# TYPE latencyMs gauge\n" + \
-                   "# TYPE lossPercent gauge\n" + \
-                   "# TYPE status gauge\n" + \
-                   "# TYPE uplinkStatus gauge\n" + \
-                   "# TYPE usingCellularFailover gauge\n"
+        responce = "# TYPE meraki_device_latency gauge\n" + \
+                   "# TYPE meraki_device_loss_percent gauge\n" + \
+                   "# TYPE meraki_device_status gauge\n" + \
+                   "# TYPE meraki_device_uplink_status gauge\n" + \
+                   "# TYPE meraki_device_using_cellular_failover gauge\n"
 
         for host in host_stats.keys():
             try:
-                target = '{ serial="' + host + \
-                         '", name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
+                target = '{serial="' + host + \
+                         '",name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
                          '",networkId="' + host_stats[host]['networkId'] + \
                          '",orgName="' + host_stats[host]['orgName'] + \
                          '",orgId="' + organizationId + \
@@ -192,7 +191,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
 
         self.wfile.write(responce.encode('utf-8'))
-        self.wfile.write("\n".encode('utf-8'))
 
     def do_HEAD(self):
         self._set_headers()
@@ -205,11 +203,11 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
+    parser = configargparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
     parser.add_argument('-k', metavar='API_KEY', type=str, required=True,
-                        help='API Key')
+                        env_var='MERAKI_API_KEY', help='API Key')
     parser.add_argument('-p', metavar='http_port', type=int, default=9822,
-                        help='HTTP port to listen for Prometheus scrapper, default 9822')
+                        help='HTTP port to listen for Prometheus scraper, default 9822')
     parser.add_argument('-i', metavar='bind_to_ip', type=str, default="",
                         help='IP address where HTTP server will listen, default all interfaces')
     args = vars(parser.parse_args())

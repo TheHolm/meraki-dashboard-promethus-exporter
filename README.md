@@ -1,5 +1,5 @@
-# Meraki API Exporter for Promethus
-Promethus exporter to collect some data from Meraki dashboard via API
+# Meraki API Exporter for Prometheus
+Prometheus exporter to collect some data from Meraki dashboard via API
 
 ### Exported metrics
 Not all devices exports all metrics.
@@ -27,7 +27,7 @@ All metrics but __request_processing_seconds__ has following Labels
 
 ### How to Use
 ```
-pip install meraki
+pip install -r requirements.txt
 ```
 You need to provide API Key from meraki portal as argument when starting exporter.<br>
 **DO NOT USE KEYS WITH FULL ADMIN PRIVILEGES**<br>
@@ -35,11 +35,11 @@ Exporter is listening on port 9822 on all interfaces by default
 
 ```
   -h, --help     show this help message and exit
-  -k API_KEY     API Key
+  -k API_KEY     API Key (Required, can also be specified using `MERAKI_API_KEY` environment variable)
   -p http_port   HTTP port to listen for Prometheus scrapper, default 9822
   -i bind_to_ip  IP address where HTTP server will listen, default all interfaces
 ```
-GET request for **/?target=\<Organization Id\>** returns data expected for Promethus Exporter
+GET request for **/?target=\<Organization Id\>** returns data expected for Prometheus Exporter
 
 GET request for **/organizations** returns YAML formatted list of Organisation Id API key has access to. You can use to automatically populate list of targets in Prometheus configuration.  
 ```
@@ -58,3 +58,9 @@ scrape_configs:
         - /etc/prometheus/meraki-targets.yml
 ```
 Please check **/systemd** folder for systemd services and timers configuration files, if your system uses it.
+
+### Docker
+
+There is a Docker image available at `ghcr.io/TheHolm/meraki-dashboard-prometheus-exporter`. You can run the exporter with a command like:
+
+`docker run -p 9822:9822 -e MERAKI_API_KEY=<api key> ghcr.io/TheHolm/meraki-dashboard-prometheus-exporter`
