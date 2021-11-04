@@ -21,5 +21,5 @@ jobs:
       - name: Build and publish a Docker image for ${{ github.repository }}
         uses: macbre/push-to-ghcr@master
         with:
-          image_name: "ghcr.io/theholm/meraki-dashboard-promethus-exporter:latest"
+          image_name: "ghcr.io/theholm/meraki-dashboard-promethus-exporter"
           github_token: ${{ secrets.GITHUB_TOKEN }}
