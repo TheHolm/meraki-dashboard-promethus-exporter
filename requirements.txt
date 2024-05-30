@@ -1,2 +1,2 @@
-meraki~=1.0
+meraki~=1.46
 ConfigArgParse~=1.5.3
