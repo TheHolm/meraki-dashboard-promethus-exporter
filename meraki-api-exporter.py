@@ -215,14 +215,14 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 pass
             if 'uplinks' in host_stats[host]:
                 for uplink in host_stats[host]['uplinks'].keys():
-                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
+                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n''
 
             if 'vpn' in stats:
                 for peer in stats['vpn']['merakiVpnPeers']:
-                    response += (f'meraki_vpn_peer_reachability{target},peerType="meraki",peerName="{peer["networkName"]}"} '
+                    response += (f'meraki_vpn_peer_reachability{target},peerType="meraki",peerName="{peer["networkName"]}" '
                                 f'{"1" if peer["reachability"] == "reachable" else "0"}\n')
                 for peer in stats['vpn']['thirdPartyVpnPeers']:
-                    response += (f'meraki_vpn_peer_reachability{target},peerType="thirdParty",peerName="{peer["name"]}",peerIp="{peer["publicIp"]}"} '
+                    response += (f'meraki_vpn_peer_reachability{target},peerType="thirdParty",peerName="{peer["name"]}",peerIp="{peer["publicIp"]}" '
                                 f'{"1" if peer["reachability"] == "reachable" else "0"}\n')
 
         responce = responce + '# TYPE request_processing_seconds summary\n'
