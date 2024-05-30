@@ -22,5 +22,5 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag bgateastmg/meraki-exporter:latest
 
-    - name: Push the Docker image
+    - name: Push the Docker image to bgatestmg
       run: docker push bgateastmg/meraki-exporter:latest
