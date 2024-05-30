@@ -1,6 +1,7 @@
 import http.server
 import threading
 import time
+
 import configargparse
 import meraki
 
@@ -26,7 +27,7 @@ def get_organizarion(org_data, dashboard, organizationId):
 
 def get_organizarions(orgs_list, dashboard):
     response = dashboard.organizations.getOrganizations()
-    for org in response:
+    for org in response:  # If you know better way to check that API key has access to an Org, please let me know. (This will rate throtled big time )
         try:
             dashboard.organizations.getOrganizationApiRequestsOverview(organizationId=org['id'])
             orgs_list.append(org['id'])
@@ -34,27 +35,10 @@ def get_organizarions(orgs_list, dashboard):
             pass
 
 
-def get_networks(networks, dashboard, organizationId):
-    networks.extend(dashboard.organizations.getOrganizationNetworks(organizationId=organizationId, total_pages="all"))
-    print('Got', len(networks), 'Networks')
-
-
-def get_network_clients(clients, dashboard, networkId):
-    clients.extend(dashboard.networks.getNetworkClients(networkId=networkId, total_pages="all"))
-    print('Got', len(clients), 'Clients')
-
-
-def get_network_health(health, dashboard, networkId):
-    health.append(dashboard.networks.getNetworkHealth(networkId=networkId))
-    print('Got Network Health')
-
-
-def get_vpn_statuses(vpnstatuses, dashboard, organizationId):
-    vpnstatuses.extend(dashboard.appliance.getOrganizationApplianceVpnStatuses(organizationId=organizationId, total_pages="all"))
-    print('Got', len(vpnstatuses), 'VPN Statuses')
-
-
 def get_usage(dashboard, organizationId):
+    # launching threads to collect data.
+    # if more indexes is requred it is good time to conver it to loop.
+
     devices = []
     t1 = threading.Thread(target=get_devices, args=(devices, dashboard, organizationId))
     t1.start()
@@ -71,31 +55,10 @@ def get_usage(dashboard, organizationId):
     t4 = threading.Thread(target=get_organizarion, args=(org_data, dashboard, organizationId))
     t4.start()
 
-    networks = []
-    t5 = threading.Thread(target=get_networks, args=(networks, dashboard, organizationId))
-    t5.start()
-
-    vpnstatuses = []
-    t6 = threading.Thread(target=get_vpn_statuses, args=(vpnstatuses, dashboard, organizationId))
-    t6.start()
-
     t1.join()
     t2.join()
     t3.join()
     t4.join()
-    t5.join()
-    t6.join()
-
-    clients = []
-    health = []
-
-    for network in networks:
-        t7 = threading.Thread(target=get_network_clients, args=(clients, dashboard, network['id']))
-        t7.start()
-        t8 = threading.Thread(target=get_network_health, args=(health, dashboard, network['id']))
-        t8.start()
-        t7.join()
-        t8.join()
 
     print('Combining collected data\n')
 
@@ -113,7 +76,7 @@ def get_usage(dashboard, organizationId):
 
     for device in devicesdtatuses:
         try:
-            the_list[device['serial']]
+            the_list[device['serial']]  # should give me KeyError if devices was not picket up by previous search.
         except KeyError:
             the_list[device['serial']] = {"missing data": True}
 
@@ -122,20 +85,16 @@ def get_usage(dashboard, organizationId):
 
     for device in uplinkstatuses:
         try:
-            the_list[device['serial']]
+            the_list[device['serial']]  # should give me KeyError if devices was not picket up by previous search.
         except KeyError:
             the_list[device['serial']] = {"missing data": True}
         the_list[device['serial']]['uplinks'] = {}
         for uplink in device['uplinks']:
             the_list[device['serial']]['uplinks'][uplink['interface']] = uplink['status']
 
-    the_list['networks'] = networks
-    the_list['clients'] = clients
-    the_list['health'] = health
-    the_list['vpnstatuses'] = vpnstatuses
-
     print('Done')
-    return the_list
+    return(the_list)
+# end of get_usage()
 
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
@@ -150,6 +109,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+
         if "/?target=" not in self.path and "/organizations" not in self.path:
             self._set_headers_404()
             return()
@@ -157,7 +117,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         self._set_headers()
         dashboard = meraki.DashboardAPI(API_KEY, output_log=False, print_console=True)
 
-        if "/organizations" in self.path:
+        if "/organizations" in self.path:   # Generating list ov avialable organizations for API keys.
             org_list = list()
             get_organizarions(org_list, dashboard)
             responce = "- targets:\n   - " + "\n   - ".join(org_list)
@@ -173,15 +133,29 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
         host_stats = get_usage(dashboard, organizationId)
         print("Reporting on:", len(host_stats), "hosts")
-
-        uplink_statuses = {'active': 0, 'ready': 1, 'connecting': 2, 'not connected': 3, 'failed': 4}
+        '''{ 'latencyMs': 23.7,
+             'lossPercent': 0.0,
+             'name': 'TestSite',
+             'mac': 'e0:cb:00:00:00:00'
+             'networkId': 'L_12345678',
+             'publicIp': '1.2.3.4',
+             'status': 'online',
+             'uplinks': {'cellular': 'ready', 'wan1': 'active'},
+             'usingCellularFailover': False,
+             'wan1Ip': '1.2.3.4'}
+        '''
+        # uplink statuses
+        uplink_statuses = {'active': 0,
+                           'ready': 1,
+                           'connecting': 2,
+                           'not connected': 3,
+                           'failed': 4}
 
         responce = "# TYPE meraki_device_latency gauge\n" + \
                    "# TYPE meraki_device_loss_percent gauge\n" + \
                    "# TYPE meraki_device_status gauge\n" + \
                    "# TYPE meraki_device_uplink_status gauge\n" + \
-                   "# TYPE meraki_device_using_cellular_failover gauge\n" + \
-                   "# TYPE meraki_appliance_vpn_status gauge\n"
+                   "# TYPE meraki_device_using_cellular_failover gauge\n"
 
         for host in host_stats.keys():
             try:
@@ -193,46 +167,28 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                          '"'
             except KeyError:
                 break
+            # values={ 'latencyMs': lambda a : str(a)}
             try:
                 if host_stats[host]['latencyMs'] is not None:
-                    responce += 'meraki_device_latency' + target + '} ' + str(host_stats[host]['latencyMs']/1000) + '\n'
+                    responce = responce + 'meraki_device_latency' + target + '} ' + str(host_stats[host]['latencyMs']/1000) + '\n'
                 if host_stats[host]['lossPercent'] is not None:
-                    responce += 'meraki_device_loss_percent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
+                    responce = responce + 'meraki_device_loss_percent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
             except KeyError:
                 pass
             try:
-                responce += 'meraki_device_status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
+                responce = responce + 'meraki_device_status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
             except KeyError:
                 pass
             try:
-                responce += 'meraki_device_using_cellular_failover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
+                responce = responce + 'meraki_device_using_cellular_failover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
             except KeyError:
                 pass
             if 'uplinks' in host_stats[host]:
                 for uplink in host_stats[host]['uplinks'].keys():
-                    responce += 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
+                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
 
-        for vpn in host_stats['vpnstatuses']:
-            try:
-                vpn_target = '{networkId="' + vpn['networkId'] + '",networkName="' + vpn['networkName'] + '",deviceSerial="' + vpn['deviceSerial'] + '"'
-                responce += 'meraki_appliance_vpn_status' + vpn_target + ',vpnMode="' + vpn['vpnMode'] + '",deviceStatus="' + vpn['deviceStatus'] + '"} 1\n'
-                for uplink in vpn['uplinks']:
-                    uplink_target = vpn_target + ',uplink="' + uplink['interface'] + '",publicIp="' + uplink['publicIp'] + '"'
-                    responce += 'meraki_appliance_vpn_status' + uplink_target + ',uplinkStatus="online"} 1\n'
-                for subnet in vpn['exportedSubnets']:
-                    subnet_target = vpn_target + ',subnet="' + subnet['subnet'] + '",subnetName="' + subnet['name'] + '"'
-                    responce += 'meraki_appliance_vpn_status' + subnet_target + ',subnetStatus="exported"} 1\n'
-                for peer in vpn['merakiVpnPeers']:
-                    peer_target = vpn_target + ',peerNetworkId="' + peer['networkId'] + '",peerNetworkName="' + peer['networkName'] + '",reachability="' + peer['reachability'] + '"'
-                    responce += 'meraki_appliance_vpn_status' + peer_target + ',peerType="meraki"} 1\n'
-                for peer in vpn['thirdPartyVpnPeers']:
-                    peer_target = vpn_target + ',peerName="' + peer['name'] + '",peerPublicIp="' + peer['publicIp'] + '",reachability="' + peer['reachability'] + '"'
-                    responce += 'meraki_appliance_vpn_status' + peer_target + ',peerType="thirdParty"} 1\n'
-            except KeyError:
-                pass
-
-        responce += '# TYPE request_processing_seconds summary\n'
-        responce += 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
+        responce = responce + '# TYPE request_processing_seconds summary\n'
+        responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
 
         self.wfile.write(responce.encode('utf-8'))
 
@@ -240,13 +196,14 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
+        # Doesn't do anything with posted data
         self._set_headers_404()
         return()
         self._set_headers()
 
 
 if __name__ == '__main__':
-    parser = configargparse.ArgumentParser(description='Per-User traffic stats Prometheus exporter for Meraki API.')
+    parser = configargparse.ArgumentParser(description='Per-User traffic stats Pronethetius exporter for Meraki API.')
     parser.add_argument('-k', metavar='API_KEY', type=str, required=True,
                         env_var='MERAKI_API_KEY', help='API Key')
     parser.add_argument('-p', metavar='http_port', type=int, default=9822,
@@ -258,9 +215,11 @@ if __name__ == '__main__':
     HTTP_BIND_IP = args['i']
     API_KEY = args['k']
 
+    # starting server
     server_class = MyHandler
     httpd = http.server.ThreadingHTTPServer((HTTP_BIND_IP, HTTP_PORT_NUMBER), server_class)
     print(time.asctime(), "Server Starts - %s:%s" % ("*" if HTTP_BIND_IP == '' else HTTP_BIND_IP, HTTP_PORT_NUMBER))
+    httpd.serve_forever()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
