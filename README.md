@@ -6,24 +6,29 @@ Not all devices exports all metrics.
 
 | metric | unit | description |
 | --- | --- | --- |
-| meraki_device_latency | seconds |
-| meraki_device_loss_percent | % | 0 - 100%
-| meraki_device_status | int | 0 - Offline <br> 1 - Online
-|meraki_device_using_cellular_failover| int | 1 - using cellular <br> 0 - using main Uplink
-| meraki_device_uplink_status | int | 'active': 0 <br> 'ready': 1 <br> 'connecting': 2 <br> 'not connected': 3 <br> 'failed': 4   
-| request_processing_seconds | sec | tottal processing time for all hosts, exported once |
+| meraki_device_latency | seconds | Device latency |
+| meraki_device_loss_percent | % | 0 - 100% |
+| meraki_device_status | int | 0 - Offline <br> 1 - Online |
+| meraki_device_using_cellular_failover | int | 1 - using cellular <br> 0 - using main Uplink |
+| meraki_device_uplink_status | int | 'active': 0 <br> 'ready': 1 <br> 'connecting': 2 <br> 'not connected': 3 <br> 'failed': 4 |
+| meraki_vpn_mode | int | 1 - hub <br> 0 - spoke |
+| meraki_vpn_exported_subnets | int | Subnet exported by the VPN, 1 per subnet |
+| meraki_vpn_meraki_peers | int | 1 - reachable <br> 0 - unreachable |
+| meraki_vpn_third_party_peers | int | 1 - reachable <br> 0 - unreachable |
+| request_processing_seconds | sec | Total processing time for all hosts, exported once |
 
 ### Labels
-All metrics but __request_processing_seconds__ has following Labels
-| . | . | . |
+All metrics but __request_processing_seconds__ have the following labels:
+| label | type | description |
 | --- | --- | --- |
-| serial | string | Serial Number
-| name | string | Device name or MAC address if name is not defined
-| networkId | string | Network ID to which device belongs too  
-| orgName  | string | Organisation Name
-| orgId | integer | Organisation Id
+| serial | string | Serial Number |
+| name | string | Device name or MAC address if name is not defined |
+| networkId | string | Network ID to which the device belongs |
+| orgName | string | Organization Name |
+| orgId | integer | Organization ID |
 
-**meraki_device_uplink_status** also carry "uplink" label containing uplink name.
+**meraki_device_uplink_status** also carries the "uplink" label containing the uplink name.
+
 
 ### How to Use
 ```
