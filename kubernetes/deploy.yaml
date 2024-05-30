@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: meraki-api-key
+  namespace: meraki
+type: Opaque
+data:
+  MERAKI_API_KEY: api_key_in_base64_format
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meraki-exporter-deployment
+  namespace: meraki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meraki-exporter
+  template:
+    metadata:
+      labels:
+        app: meraki-exporter
+    spec:
+      containers:
+      - name: meraki-exporter
+        image: bgatestmg/meraki-exporter
+        ports:
+        - containerPort: 9822
+        env:
+          - name: MERAKI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: meraki-api-key
+                key: MERAKI_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meraki-exporter-service
+  namespace: meraki
+spec:
+  type: ClusterIP
+  selector:
+    app: meraki-exporter
+  ports:
+    - name: port9822
+      protocol: TCP
+      port: 9822
+      targetPort: 9822
