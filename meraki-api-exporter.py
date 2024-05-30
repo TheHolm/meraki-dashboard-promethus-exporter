@@ -21,6 +21,11 @@ def get_uplink_statuses(uplinkstatuses, dashboard, organizationId):
     print('Got ', len(uplinkstatuses), 'Uplink Statuses')
 
 
+def get_vpn_statuses(vpnstatuses, dashboard, organizationId):
+    vpnstatuses.extend(dashboard.appliance.getOrganizationApplianceVpnStatuses(organizationId=organizationId, total_pages="all"))
+    print('Got ', len(vpnstatuses), 'VPN Statuses')
+
+
 def get_organizarion(org_data, dashboard, organizationId):
     org_data.update(dashboard.organizations.getOrganization(organizationId=organizationId))
 
@@ -51,14 +56,19 @@ def get_usage(dashboard, organizationId):
     t3 = threading.Thread(target=get_uplink_statuses, args=(uplinkstatuses, dashboard, organizationId))
     t3.start()
 
-    org_data = {}
-    t4 = threading.Thread(target=get_organizarion, args=(org_data, dashboard, organizationId))
+    vpnstatuses = []
+    t4 = threading.Thread(target=get_vpn_statuses, args=(vpnstatuses, dashboard, organizationId))
     t4.start()
+
+    org_data = {}
+    t5 = threading.Thread(target=get_organizarion, args=(org_data, dashboard, organizationId))
+    t5.start()
 
     t1.join()
     t2.join()
     t3.join()
     t4.join()
+    t5.join()
 
     print('Combining collected data\n')
 
@@ -91,6 +101,17 @@ def get_usage(dashboard, organizationId):
         the_list[device['serial']]['uplinks'] = {}
         for uplink in device['uplinks']:
             the_list[device['serial']]['uplinks'][uplink['interface']] = uplink['status']
+
+    for vpn in vpnstatuses:
+        try:
+            the_list[vpn['deviceSerial']]  # should give me KeyError if device was not picked up by previous search.
+        except KeyError:
+            the_list[vpn['deviceSerial']] = {"missing data": True}
+
+        the_list[vpn['deviceSerial']]['vpnMode'] = vpn['vpnMode']
+        the_list[vpn['deviceSerial']]['exportedSubnets'] = [subnet['subnet'] for subnet in vpn['exportedSubnets']]
+        the_list[vpn['deviceSerial']]['merakiVpnPeers'] = vpn['merakiVpnPeers']
+        the_list[vpn['deviceSerial']]['thirdPartyVpnPeers'] = vpn['thirdPartyVpnPeers']
 
     print('Done')
     return(the_list)
@@ -155,7 +176,11 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                    "# TYPE meraki_device_loss_percent gauge\n" + \
                    "# TYPE meraki_device_status gauge\n" + \
                    "# TYPE meraki_device_uplink_status gauge\n" + \
-                   "# TYPE meraki_device_using_cellular_failover gauge\n"
+                   "# TYPE meraki_device_using_cellular_failover gauge\n" + \
+                   "# TYPE meraki_vpn_mode gauge\n" + \
+                   "# TYPE meraki_vpn_exported_subnets gauge\n" + \
+                   "# TYPE meraki_vpn_meraki_peers gauge\n" + \
+                   "# TYPE meraki_vpn_third_party_peers gauge\n"
 
         for host in host_stats.keys():
             try:
@@ -186,6 +211,19 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             if 'uplinks' in host_stats[host]:
                 for uplink in host_stats[host]['uplinks'].keys():
                     responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
+            if 'vpnMode' in host_stats[host]:
+                responce = responce + 'meraki_vpn_mode' + target + '} ' + ('1' if host_stats[host]['vpnMode'] == 'hub' else '0') + '\n'
+            if 'exportedSubnets' in host_stats[host]:
+                for subnet in host_stats[host]['exportedSubnets']:
+                    responce = responce + 'meraki_vpn_exported_subnets' + target + ',subnet="' + subnet + '"} 1\n'
+            if 'merakiVpnPeers' in host_stats[host]:
+                for peer in host_stats[host]['merakiVpnPeers']:
+                    reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
+                    responce = responce + 'meraki_vpn_meraki_peers' + target + ',peer_networkId="' + peer['networkId'] + '",peer_networkName="' + peer['networkName'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
+            if 'thirdPartyVpnPeers' in host_stats[host]:
+                for peer in host_stats[host]['thirdPartyVpnPeers']:
+                    reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
+                    responce = responce + 'meraki_vpn_third_party_peers' + target + ',peer_name="' + peer['name'] + '",peer_publicIp="' + peer['publicIp'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
 
         responce = responce + '# TYPE request_processing_seconds summary\n'
         responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
