@@ -34,10 +34,6 @@ def get_organizarions(orgs_list, dashboard):
         except meraki.exceptions.APIError:
             pass
 
-def get_vpn_statuses(vpn_statuses, dashboard, organization_id):
-    vpn_statuses.extend(dashboard.appliance.getOrganizationApplianceVpnStatuses(organizationId=organization_id, total_pages='all'))
-    print('Got', len(vpn_statuses), 'VPN Statuses')
-
 
 def get_usage(dashboard, organizationId):
     # launching threads to collect data.
@@ -59,16 +55,10 @@ def get_usage(dashboard, organizationId):
     t4 = threading.Thread(target=get_organizarion, args=(org_data, dashboard, organizationId))
     t4.start()
 
-    vpn_statuses = []
-    t5 = threading.Thread(target=get_vpn_statuses, args=(vpn_statuses, dashboard, organization_id))
-    t5.start()
-
-
     t1.join()
     t2.join()
     t3.join()
     t4.join()
-    t5.join()
 
     print('Combining collected data\n')
 
@@ -101,26 +91,6 @@ def get_usage(dashboard, organizationId):
         the_list[device['serial']]['uplinks'] = {}
         for uplink in device['uplinks']:
             the_list[device['serial']]['uplinks'][uplink['interface']] = uplink['status']
-
-    for vpn in vpn_statuses:
-        if vpn['deviceSerial'] not in the_list:
-            the_list[vpn['deviceSerial']] = {"missing data": True}
-        the_list[vpn['deviceSerial']]['vpn'] = {
-            "networkName": vpn['networkName'],
-            "merakiVpnPeers": [
-                {
-                    "networkName": peer['networkName'],
-                    "reachability": peer['reachability']
-                } for peer in vpn.get('merakiVpnPeers', [])
-            ],
-            "thirdPartyVpnPeers": [
-                {
-                    "name": peer['name'],
-                    "publicIp": peer['publicIp'],
-                    "reachability": peer['reachability']
-                } for peer in vpn.get('thirdPartyVpnPeers', [])
-            ]
-        }
 
     print('Done')
     return(the_list)
@@ -215,15 +185,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 pass
             if 'uplinks' in host_stats[host]:
                 for uplink in host_stats[host]['uplinks'].keys():
-                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n''
-
-            if 'vpn' in stats:
-                for peer in stats['vpn']['merakiVpnPeers']:
-                    response += (f'meraki_vpn_peer_reachability{target},peerType="meraki",peerName="{peer["networkName"]}" '
-                                f'{"1" if peer["reachability"] == "reachable" else "0"}\n')
-                for peer in stats['vpn']['thirdPartyVpnPeers']:
-                    response += (f'meraki_vpn_peer_reachability{target},peerType="thirdParty",peerName="{peer["name"]}",peerIp="{peer["publicIp"]}" '
-                                f'{"1" if peer["reachability"] == "reachable" else "0"}\n')
+                    responce = responce + 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
 
         responce = responce + '# TYPE request_processing_seconds summary\n'
         responce = responce + 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
