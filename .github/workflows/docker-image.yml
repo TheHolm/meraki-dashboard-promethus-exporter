@@ -38,7 +38,6 @@ jobs:
         name: Build and publish a Docker image for ${{ github.repository }}
         uses: docker/build-push-action@v5
         with:
-          context: .
           platforms: linux/amd64, linux/arm64
           push: true
           tags: |
