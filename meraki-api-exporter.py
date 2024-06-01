@@ -32,9 +32,9 @@ def get_organizarion(org_data, dashboard, organizationId):
 
 def get_organizarions(orgs_list, dashboard):
     response = dashboard.organizations.getOrganizations()
-    for org in response:
+    for org in response:  # If you know better way to check that API key has access to an Org, please let me know. (This will rate throtled big time )
         try:
-            dashboard.organizations.getOrganizationApiRequestsOverview(organizationId=org['id'])
+            dashboard.organizations.getOrganizationSummaryTopDevicesByUsage(organizationId=org['id'])
             orgs_list.append(org['id'])
         except meraki.exceptions.APIError:
             pass
@@ -53,9 +53,10 @@ def get_usage(dashboard, organizationId):
     t3 = threading.Thread(target=get_uplink_statuses, args=(uplinkstatuses, dashboard, organizationId))
     t3.start()
 
-    vpnstatuses = []
-    t4 = threading.Thread(target=get_vpn_statuses, args=(vpnstatuses, dashboard, organizationId))
-    t4.start()
+    if 'vpn' in COLLECT_EXTRA:
+        vpnstatuses = []
+        t4 = threading.Thread(target=get_vpn_statuses, args=(vpnstatuses, dashboard, organizationId))
+        t4.start()
 
     org_data = {}
     t5 = threading.Thread(target=get_organizarion, args=(org_data, dashboard, organizationId))
@@ -64,7 +65,8 @@ def get_usage(dashboard, organizationId):
     t1.join()
     t2.join()
     t3.join()
-    t4.join()
+    if 'vpn' in COLLECT_EXTRA:
+        t4.join()
     t5.join()
 
     print('Combining collected data\n')
@@ -83,7 +85,7 @@ def get_usage(dashboard, organizationId):
 
     for device in devicesdtatuses:
         try:
-            the_list[device['serial']]
+            the_list[device['serial']]  # should give me KeyError if devices was not picket up by previous search.
         except KeyError:
             the_list[device['serial']] = {"missing data": True}
 
@@ -92,26 +94,28 @@ def get_usage(dashboard, organizationId):
 
     for device in uplinkstatuses:
         try:
-            the_list[device['serial']]
+            the_list[device['serial']]  # should give me KeyError if devices was not picket up by previous search.
         except KeyError:
             the_list[device['serial']] = {"missing data": True}
         the_list[device['serial']]['uplinks'] = {}
         for uplink in device['uplinks']:
             the_list[device['serial']]['uplinks'][uplink['interface']] = uplink['status']
 
-    for vpn in vpnstatuses:
-        try:
-            the_list[vpn['deviceSerial']]
-        except KeyError:
-            the_list[vpn['deviceSerial']] = {"missing data": True}
+    if 'vpn' in COLLECT_EXTRA:
+        for vpn in vpnstatuses:
+            try:
+                the_list[vpn['deviceSerial']]
+            except KeyError:
+                the_list[vpn['deviceSerial']] = {"missing data": True}
 
-        the_list[vpn['deviceSerial']]['vpnMode'] = vpn['vpnMode']
-        the_list[vpn['deviceSerial']]['exportedSubnets'] = [subnet['subnet'] for subnet in vpn['exportedSubnets']]
-        the_list[vpn['deviceSerial']]['merakiVpnPeers'] = vpn['merakiVpnPeers']
-        the_list[vpn['deviceSerial']]['thirdPartyVpnPeers'] = vpn['thirdPartyVpnPeers']
+            the_list[vpn['deviceSerial']]['vpnMode'] = vpn['vpnMode']
+            the_list[vpn['deviceSerial']]['exportedSubnets'] = [subnet['subnet'] for subnet in vpn['exportedSubnets']]
+            the_list[vpn['deviceSerial']]['merakiVpnPeers'] = vpn['merakiVpnPeers']
+            the_list[vpn['deviceSerial']]['thirdPartyVpnPeers'] = vpn['thirdPartyVpnPeers']
 
     print('Done')
     return(the_list)
+# end of get_usage()
 
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
@@ -132,9 +136,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             return()
 
         self._set_headers()
-        dashboard = meraki.DashboardAPI(API_KEY, output_log=False, print_console=True)
+        dashboard = meraki.DashboardAPI(API_KEY, output_log=False, print_console=True, maximum_retries=20)
 
-        if "/organizations" in self.path:
+        if "/organizations" in self.path:   # Generating list of avialable organizations for API keys.
             org_list = list()
             get_organizarions(org_list, dashboard)
             responce = "- targets:\n   - " + "\n   - ".join(org_list)
@@ -169,6 +173,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 # HELP meraki_device_using_cellular_failover Whether the Meraki device is using cellular failover (1 for true, 0 for false)
 # TYPE meraki_device_using_cellular_failover gauge
 # UNIT meraki_device_using_cellular_failover boolean
+"""
+        if 'vpn' in COLLECT_EXTRA:
+            responce +="""
 # HELP meraki_vpn_mode The VPN mode of the Meraki device (1 for hub, 0 for spoke)
 # TYPE meraki_vpn_mode gauge
 # UNIT meraki_vpn_mode boolean
@@ -234,6 +241,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         self._set_headers()
 
     def do_POST(self):
+        # Doesn't do anything with posted data
         self._set_headers_404()
         return()
         self._set_headers()
@@ -247,11 +255,17 @@ if __name__ == '__main__':
                         help='HTTP port to listen for Prometheus scraper, default 9822')
     parser.add_argument('-i', metavar='bind_to_ip', type=str, default="",
                         help='IP address where HTTP server will listen, default all interfaces')
+    parser.add_argument('--vpn', dest='collect_vpn_data', action='store_true',
+                        help='If set VPN connection statuses will be also collected')
     args = vars(parser.parse_args())
     HTTP_PORT_NUMBER = args['p']
     HTTP_BIND_IP = args['i']
     API_KEY = args['k']
+    COLLECT_EXTRA = ()
+    COLLECT_EXTRA += ( ('vpn',) if args['collect_vpn_data'] else () )
 
+
+    # starting server
     server_class = MyHandler
     httpd = http.server.ThreadingHTTPServer((HTTP_BIND_IP, HTTP_PORT_NUMBER), server_class)
     print(time.asctime(), "Server Starts - %s:%s" % ("*" if HTTP_BIND_IP == '' else HTTP_BIND_IP, HTTP_PORT_NUMBER))

@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.11-slim
 
 # Set up /app as our runtime directory
 RUN mkdir /app

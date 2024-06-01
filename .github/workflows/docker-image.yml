@@ -1,9 +1,15 @@
 name: ci
 
 on:
+  # publish on releases, e.g. v2.1.13 (image tagged as "2.1.13" - "v" prefix is removed)
+  release:
+    types: [ published ]
+
+    # publish on pushes to the main branch (image tagged as "latest")
   push:
     branches:
       - 'master'
+
 
 jobs:
   docker:
@@ -16,14 +22,27 @@ jobs:
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       -
-        name: Login to Docker Hub
-        uses: docker/login-action@v3
+        name: Login to DockerHub
+        uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_IO_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build and push
+        name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: Build and publish a Docker image for ${{ github.repository }}
         uses: docker/build-push-action@v5
         with:
+          context: .
+          platforms: linux/amd64, linux/arm64
           push: true
-          tags: bgatestmg/meraki-exporter:latest
+          tags: |
+            theholm/meraki-dashboard-promethus-exporter:latest
+            theholm/meraki-dashboard-promethus-exporter:1.1
+            ghcr.io/theholm/meraki-dashboard-promethus-exporter:latest
+            ghcr.io/theholm/meraki-dashboard-promethus-exporter:1.1

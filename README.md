@@ -43,6 +43,7 @@ Exporter is listening on port 9822 on all interfaces by default
   -k API_KEY     API Key (Required, can also be specified using `MERAKI_API_KEY` environment variable)
   -p http_port   HTTP port to listen for Prometheus scrapper, default 9822
   -i bind_to_ip  IP address where HTTP server will listen, default all interfaces
+  --vpn          If set VPN connection statuses will be also collected
 ```
 GET request for **/?target=\<Organization Id\>** returns data expected for Prometheus Exporter
 
@@ -66,6 +67,6 @@ Please check **/systemd** folder for systemd services and timers configuration f
 
 ### Docker
 
-There is a Docker image available at `docker.io/bgatestmg/meraki-exporter`. You can run the exporter with a command like:
+There is a Docker image available at `ghcr.io/TheHolm/meraki-dashboard-prometheus-exporter`. You can run the exporter with a command like:
 
-`docker run -p 9822:9822 -e MERAKI_API_KEY=<api key> bgatestmg/meraki-exporter`
+`docker run -p 9822:9822 -e MERAKI_API_KEY=<api key> ghcr.io/TheHolm/meraki-dashboard-prometheus-exporter`
