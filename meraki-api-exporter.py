@@ -189,48 +189,49 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 # TYPE meraki_vpn_third_party_peers gauge
 # UNIT meraki_vpn_third_party_peers count
 """
-
         for host in host_stats.keys():
-            try:
-                target = '{serial="' + host + \
-                         '",name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
-                         '",networkId="' + host_stats[host]['networkId'] + \
-                         '",orgName="' + host_stats[host]['orgName'] + \
-                         '",orgId="' + organizationId + \
-                         '"'
-            except KeyError:
-                break
-            try:
-                if host_stats[host]['latencyMs'] is not None:
-                    responce += 'meraki_device_latency' + target + '} ' + str(host_stats[host]['latencyMs']/1000) + '\n'
-                if host_stats[host]['lossPercent'] is not None:
-                    responce += 'meraki_device_loss_percent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
-            except KeyError:
-                pass
-            try:
-                responce += 'meraki_device_status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
-            except KeyError:
-                pass
-            try:
-                responce += 'meraki_device_using_cellular_failover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
-            except KeyError:
-                pass
-            if 'uplinks' in host_stats[host]:
-                for uplink in host_stats[host]['uplinks'].keys():
-                    responce += 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
-            if 'vpnMode' in host_stats[host]:
-                responce += 'meraki_vpn_mode' + target + '} ' + ('1' if host_stats[host]['vpnMode'] == 'hub' else '0') + '\n'
-            if 'exportedSubnets' in host_stats[host]:
-                for subnet in host_stats[host]['exportedSubnets']:
-                    responce += 'meraki_vpn_exported_subnets' + target + ',subnet="' + subnet + '"} 1\n'
-            if 'merakiVpnPeers' in host_stats[host]:
-                for peer in host_stats[host]['merakiVpnPeers']:
-                    reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
-                    responce += 'meraki_vpn_meraki_peers' + target + ',peer_networkId="' + peer['networkId'] + '",peer_networkName="' + peer['networkName'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
-            if 'thirdPartyVpnPeers' in host_stats[host]:
-                for peer in host_stats[host]['thirdPartyVpnPeers']:
-                    reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
-                    responce += 'meraki_vpn_third_party_peers' + target + ',peer_name="' + peer['name'] + '",peer_publicIp="' + peer['publicIp'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
+            # The getOrganizationDevicesUplinksLossAndLatency can return devices with no serial numbers. Issue #5
+            if host != None:
+                try:
+                    target = '{serial="' + host + \
+                             '",name="' + (host_stats[host]['name'] if host_stats[host]['name'] != "" else host_stats[host]['mac'] ) + \
+                             '",networkId="' + host_stats[host]['networkId'] + \
+                             '",orgName="' + host_stats[host]['orgName'] + \
+                             '",orgId="' + organizationId + \
+                             '"'
+                except KeyError:
+                    break
+                try:
+                    if host_stats[host]['latencyMs'] is not None:
+                        responce += 'meraki_device_latency' + target + '} ' + str(host_stats[host]['latencyMs']/1000) + '\n'
+                    if host_stats[host]['lossPercent'] is not None:
+                        responce += 'meraki_device_loss_percent' + target + '} ' + str(host_stats[host]['lossPercent']) + '\n'
+                except KeyError:
+                    pass
+                try:
+                    responce += 'meraki_device_status' + target + '} ' + ('1' if host_stats[host]['status'] == 'online' else '0') + '\n'
+                except KeyError:
+                    pass
+                try:
+                    responce += 'meraki_device_using_cellular_failover' + target + '} ' + ('1' if host_stats[host]['usingCellularFailover'] else '0') + '\n'
+                except KeyError:
+                    pass
+                if 'uplinks' in host_stats[host]:
+                    for uplink in host_stats[host]['uplinks'].keys():
+                        responce += 'meraki_device_uplink_status' + target + ',uplink="' + uplink + '"} ' + str(uplink_statuses[host_stats[host]['uplinks'][uplink]]) + '\n'
+                if 'vpnMode' in host_stats[host]:
+                    responce += 'meraki_vpn_mode' + target + '} ' + ('1' if host_stats[host]['vpnMode'] == 'hub' else '0') + '\n'
+                if 'exportedSubnets' in host_stats[host]:
+                    for subnet in host_stats[host]['exportedSubnets']:
+                        responce += 'meraki_vpn_exported_subnets' + target + ',subnet="' + subnet + '"} 1\n'
+                if 'merakiVpnPeers' in host_stats[host]:
+                    for peer in host_stats[host]['merakiVpnPeers']:
+                        reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
+                        responce += 'meraki_vpn_meraki_peers' + target + ',peer_networkId="' + peer['networkId'] + '",peer_networkName="' + peer['networkName'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
+                if 'thirdPartyVpnPeers' in host_stats[host]:
+                    for peer in host_stats[host]['thirdPartyVpnPeers']:
+                        reachability_value = '1' if peer['reachability'] == 'reachable' else '0'
+                        responce += 'meraki_vpn_third_party_peers' + target + ',peer_name="' + peer['name'] + '",peer_publicIp="' + peer['publicIp'] + '",reachability="' + peer['reachability'] + '"} ' + reachability_value + '\n'
 
         responce += '# TYPE request_processing_seconds summary\n'
         responce += 'request_processing_seconds ' + str(time.monotonic() - start_time) + '\n'
